@@ -1,0 +1,18 @@
+{
+  "projectId": "proj_barefoot",
+  "name": "barefoot-shoes",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install",
+  "env": [
+    "GEMINI_API_KEY",
+    "VITE_PAYPAL_CLIENT_ID",
+    "VITE_PAYPAL_HOSTED_BUTTON_ID",
+    "VITE_PAYPAL_CUSTOM_URL",
+    "KV_REST_API_URL",
+    "KV_REST_API_TOKEN"
+  ],
+  "buildOutputDirectory": "dist",
+  "trailingSlash": false,
+  "regions": ["iad1"]
+}
