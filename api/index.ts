@@ -1,5 +1,7 @@
 import app from "../server";
 
-export default function handler(req: any, res: any) {
-  return app(req, res);
-}
+export const config = {
+  runtime: 'nodejs18.x',
+};
+
+export default app;
