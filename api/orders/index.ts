@@ -70,8 +70,9 @@ async function readGoogleConfig() {
 
 async function appendOrderToGoogleSheet(order: any) {
   const config = await readGoogleConfig() as any;
+  const webhookUrl = config.webhookUrl || process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
-  if (config.webhookUrl) {
+  if (webhookUrl) {
     try {
       const formattedItems = order.items && Array.isArray(order.items)
         ? order.items.map((item: any) => `${item.name} (${item.color}, מידה ${item.size}) x${item.quantity}`).join(", ")
@@ -93,7 +94,7 @@ async function appendOrderToGoogleSheet(order: any) {
         trackingNumber: order.trackingNumber || ""
       };
 
-      const response = await fetch(config.webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
