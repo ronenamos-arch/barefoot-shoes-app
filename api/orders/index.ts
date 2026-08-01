@@ -72,7 +72,11 @@ async function appendOrderToGoogleSheet(order: any) {
   const config = await readGoogleConfig() as any;
   const webhookUrl = config.webhookUrl || process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
-  if (webhookUrl) {
+  if (!webhookUrl) {
+    return { synced: false, debug: "no webhookUrl resolved (config empty and GOOGLE_SHEETS_WEBHOOK_URL env var not set)" };
+  }
+
+  {
     try {
       const formattedItems = order.items && Array.isArray(order.items)
         ? order.items.map((item: any) => `${item.name} (${item.color}, מידה ${item.size}) x${item.quantity}`).join(", ")
@@ -104,17 +108,17 @@ async function appendOrderToGoogleSheet(order: any) {
 
       if (response.ok) {
         console.log(`Successfully pushed order ${order.id} to Google Sheets Webhook`);
-        return true;
+        return { synced: true, debug: "ok" };
       } else {
         const errText = await response.text();
         console.error(`Failed pushing to Google Sheets Webhook: ${response.status} ${errText}`);
+        return { synced: false, debug: `webhook responded ${response.status}: ${errText.slice(0, 200)}` };
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error pushing to Webhook:", error);
+      return { synced: false, debug: `fetch threw: ${error?.message || error}` };
     }
   }
-
-  return false;
 }
 
 const ADMIN_PASSCODE = process.env.ADMIN_PASSCODE || "1234";
@@ -155,15 +159,15 @@ export default async function handler(req: any, res: any) {
       syncedToGoogle: false
     };
 
-    const synced = await appendOrderToGoogleSheet(newOrder);
-    if (synced) {
+    const syncResult = await appendOrderToGoogleSheet(newOrder);
+    if (syncResult.synced) {
       newOrder.syncedToGoogle = true;
     }
 
     orders.unshift(newOrder);
     await writeOrders(orders);
 
-    return res.status(201).json({ success: true, order: newOrder });
+    return res.status(201).json({ success: true, order: newOrder, syncDebug: syncResult.debug });
   }
 
   if (req.method === "GET") {
