@@ -1,4 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
+
+// Deployed Google Apps Script web app that appends orders to the Sheet.
+// Public "Anyone" endpoint, so it's safe to call directly from the browser.
+const GOOGLE_SHEETS_WEBHOOK_URL =
+  "https://script.google.com/macros/s/AKfycbz8VkHVHRYWier_BUqq3LmDsqwwuph4d_O4IlwNeivJac9GoJUi1pVoDLDLErgIWxEB/exec";
+
 import { 
   Maximize2, 
   Wind, 
@@ -630,6 +636,38 @@ export default function App() {
         paypalMode: method === "paypal" ? (paypalClientId === "test" ? "sandbox" : "live") : undefined
       }
     };
+
+    const newOrderId = "ORD-" + Math.floor(Math.random() * 900000 + 100000);
+
+    // Send straight to the Google Sheets Apps Script web app.
+    // Done from the browser so the Sheet write doesn't depend on any
+    // server-side config. text/plain + no-cors avoids the CORS preflight
+    // that Apps Script can't answer; doPost still reads e.postData.contents.
+    try {
+      await fetch(GOOGLE_SHEETS_WEBHOOK_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          id: newOrderId,
+          createdAt: new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" }),
+          fullName: orderData.fullName,
+          phoneNumber: orderData.phoneNumber,
+          city: orderData.city,
+          address: orderData.address,
+          email: orderData.email,
+          totalPrice: `₪${orderData.totalPrice}`,
+          items: orderData.items
+            .map((i) => `${i.name} (${i.color}, מידה ${i.size}) x${i.quantity}`)
+            .join(", "),
+          paymentMethod: orderData.paymentMethod,
+          status: "חדש",
+          trackingNumber: ""
+        })
+      });
+    } catch (e) {
+      console.error("Error sending order to Google Sheets:", e);
+    }
 
     try {
       const res = await fetch("/api/orders", {
